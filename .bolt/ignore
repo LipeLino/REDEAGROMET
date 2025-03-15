@@ -1,0 +1,9 @@
+# Ignore patterns for Bolt
+node_modules/
+.next/
+dist/
+build/
+out/
+.git/
+.DS_Store
+*.log

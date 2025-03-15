@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "settings": {
+    "enableTypeScript": true,
+    "enableESLint": true,
+    "enablePrettier": true
+  }
+}
