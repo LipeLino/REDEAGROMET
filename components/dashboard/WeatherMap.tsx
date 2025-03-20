@@ -11,7 +11,7 @@ import { ExportDialog } from "./ExportDialog";
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[600px] bg-gray-100 animate-pulse flex items-center justify-center">
+    <div className="w-full h-60 sm:h-80 md:h-[500px] lg:h-[600px] bg-gray-100 animate-pulse flex items-center justify-center">
       <p className="text-gray-500">Carregando mapa...</p>
     </div>
   ),
@@ -19,10 +19,10 @@ const MapComponent = dynamic(() => import("./MapComponent"), {
 
 interface WeatherMapProps {
   selectedStation: string;
-  onStationChange: (stationId: string) => void;
+  onStationSelect: (stationId: string) => void;
 }
 
-export function WeatherMap({ selectedStation, onStationChange }: WeatherMapProps) {
+export function WeatherMap({ selectedStation, onStationSelect }: WeatherMapProps) {
   const [timelineState, setTimelineState] = useState<TimelineState>({
     startDate: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000),
     endDate: new Date(),
@@ -86,10 +86,10 @@ export function WeatherMap({ selectedStation, onStationChange }: WeatherMapProps
         onTimeChange={handleTimeChange}
         onExport={() => setIsExportDialogOpen(true)}
       />
-      <div className="w-full h-[600px] rounded-lg overflow-hidden shadow-lg">
+      <div className="w-full">
         <MapComponent
           selectedDate={timelineState.currentDate}
-          onStationSelect={onStationChange}
+          onStationSelect={onStationSelect}
           selectedStation={selectedStation}
         />
       </div>

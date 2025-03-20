@@ -40,7 +40,7 @@ const defaultFields: ExportField[] = [
   { key: 'evapotranspiration', label: 'Evapotranspiração (mm)', checked: true },
 ];
 
-export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportDialogProps) {
+export function ExportDialog({ isOpen, onClose, onExport, previewData = [] }: ExportDialogProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -57,27 +57,27 @@ export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportD
   });
 
   const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
+    from: Date;
+    to: Date;
   }>({
     from: exportOptions.dateRange.startDate,
     to: exportOptions.dateRange.endDate
   });
 
   const handlePresetChange = (preset: DatePreset) => {
-    setSelectedPreset(preset);
-    
     if (preset === 'custom') {
+      setSelectedPreset(preset);
       setIsCalendarOpen(true);
       return;
     }
 
     const presetConfig = datePresets.find(p => p.value === preset);
-    if (!presetConfig) return;
+    if (!presetConfig?.days) return;
 
     const end = endOfDay(new Date());
-    const start = startOfDay(subDays(end, presetConfig.days!));
+    const start = startOfDay(subDays(end, presetConfig.days - 1));
     
+    setSelectedPreset(preset);
     setDateRange({ from: start, to: end });
     setExportOptions(prev => ({
       ...prev,
@@ -86,20 +86,22 @@ export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportD
     setIsCalendarOpen(false);
   };
 
-  const handleDateRangeSelect = (range: { from: Date | undefined; to: Date | undefined }) => {
-    setDateRange(range);
+  const handleDateRangeSelect = (range: { from: Date | undefined; to: Date | undefined } | undefined) => {
+    if (!range?.from || !range?.to) return;
     
-    if (range.from && range.to) {
-      setExportOptions(prev => ({
-        ...prev,
-        dateRange: {
-          startDate: startOfDay(range.from!),
-          endDate: endOfDay(range.to!)
-        }
-      }));
-      setSelectedPreset('custom');
-      setIsCalendarOpen(false);
-    }
+    setDateRange({
+      from: range.from,
+      to: range.to
+    });
+    
+    setExportOptions(prev => ({
+      ...prev,
+      dateRange: {
+        startDate: startOfDay(range.from),
+        endDate: endOfDay(range.to)
+      }
+    }));
+    setSelectedPreset('custom');
   };
 
   const handleExport = async () => {
@@ -126,7 +128,8 @@ export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportD
             if (field.key === 'timestamp') {
               return format(new Date(row[field.key]), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
             }
-            return row[field.key].toFixed(2);
+            const value = row[field.key];
+            return typeof value === 'number' ? value.toFixed(2) : '';
           })
           .join(',')
       );
@@ -195,18 +198,8 @@ export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportD
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-[300px] justify-between">
                     <span>
-                      {dateRange.from ? (
-                        dateRange.to ? (
-                          <>
-                            {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-                            {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
-                          </>
-                        ) : (
-                          format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
-                        )
-                      ) : (
-                        "Selecione um período"
-                      )}
+                      {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
+                      {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
                     </span>
                     <Calendar className="w-4 h-4" />
                   </Button>
@@ -214,7 +207,10 @@ export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportD
                 <PopoverContent className="w-auto p-0" align="start">
                   <CalendarComponent
                     mode="range"
-                    selected={dateRange}
+                    selected={{
+                      from: dateRange.from,
+                      to: dateRange.to
+                    }}
                     onSelect={handleDateRangeSelect}
                     numberOfMonths={2}
                     disabled={{ after: new Date() }}
@@ -268,7 +264,7 @@ export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportD
           </div>
 
           {/* Preview */}
-          {previewData && previewData.length > 0 && (
+          {previewData.length > 0 && (
             <div className="space-y-2">
               <Label>Prévia dos Dados</Label>
               <div className="max-h-40 overflow-auto border rounded-md p-2">
@@ -293,7 +289,7 @@ export function ExportDialog({ isOpen, onClose, onExport, previewData }: ExportD
                             <td key={field.key} className="p-2">
                               {field.key === 'timestamp'
                                 ? format(new Date(row[field.key]), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })
-                                : row[field.key].toFixed(2)}
+                                : row[field.key] != null ? (row[field.key] as number).toFixed(2) : ''}
                             </td>
                           ))}
                       </tr>

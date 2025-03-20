@@ -188,3 +188,23 @@
   position: relative;
   z-index: 1000 !important;
 }
+
+/* Add responsive styles */
+@media (max-width: 768px) {
+  .leaflet-popup-content {
+    margin: 8px;
+    min-width: 160px;
+  }
+  
+  .leaflet-popup-content h3 {
+    font-size: 0.9rem;
+  }
+  
+  .leaflet-popup-content .text-sm {
+    font-size: 0.75rem;
+  }
+}
+
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+@import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';

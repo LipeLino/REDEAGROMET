@@ -7,6 +7,7 @@ import { FeatureCard } from "@/components/ui/FeatureCard";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { MonitoredParameters } from "@/components/sections/MonitoredParameters";
 import { BulletinSection } from "@/components/sections/BulletinSection";
+import { MonthlyBulletinSection } from "@/components/sections/MonthlyBulletinSection";
 
 export default function Home() {
   return (
@@ -54,6 +55,27 @@ export default function Home() {
                   </div>
                   <div className="relative flex justify-center">
                     <div className="px-4 bg-gradient-to-r from-gray-50 via-white to-gray-50">
+                      <div className="w-2 h-2 rounded-full bg-[#003366]/40"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Monthly Bulletin Section (New) */}
+          <MonthlyBulletinSection />
+
+          {/* Section Separator */}
+          <div className="relative h-16 bg-gradient-to-b from-white to-gray-50">
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2">
+              <div className="container mx-auto px-4">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <div className="relative flex justify-center">
+                    <div className="px-4 bg-gradient-to-r from-white via-gray-50 to-white">
                       <div className="w-2 h-2 rounded-full bg-[#003366]/40"></div>
                     </div>
                   </div>

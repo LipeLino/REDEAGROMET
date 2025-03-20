@@ -1,10 +1,14 @@
 import { z } from 'zod';
 
 export const userSchema = z.object({
-  username: z.string()
-    .min(4, 'Nome de usuário deve ter no mínimo 4 caracteres')
-    .max(30, 'Nome de usuário deve ter no máximo 30 caracteres')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Nome de usuário deve conter apenas letras, números e _'),
+  fullName: z.string()
+    .min(3, 'Nome completo deve ter no mínimo 3 caracteres')
+    .max(100, 'Nome completo deve ter no máximo 100 caracteres')
+    .regex(/^[a-zA-ZÀ-ÿ\s]+$/, 'O nome deve conter apenas letras')
+    .refine(
+      name => name.trim().split(/\s+/).length >= 2,
+      'Digite seu nome completo (nome e sobrenome)'
+    ),
   email: z.string()
     .email('Email inválido')
     .refine(email => {
@@ -13,13 +17,23 @@ export const userSchema = z.object({
     }, 'Email deve ser institucional UEMG ou um email válido'),
   password: z.string()
     .min(8, 'Senha deve ter no mínimo 8 caracteres')
-    .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/, 
-      'Senha deve conter letras e números'),
+    .refine(
+      password => /[A-Za-z]/.test(password), 
+      'A senha deve conter pelo menos uma letra'
+    )
+    .refine(
+      password => /\d/.test(password), 
+      'A senha deve conter pelo menos um número'
+    )
+    .refine(
+      password => /[^A-Za-z0-9]/.test(password), 
+      'A senha deve conter pelo menos um caractere especial'
+    ),
   confirmPassword: z.string(),
   acceptTerms: z.boolean()
     .refine(val => val === true, 'Você deve aceitar os termos de uso'),
 }).refine(data => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
+  message: "As senhas digitadas não coincidem",
   path: ["confirmPassword"],
 });
 
@@ -33,7 +47,8 @@ export interface VerificationCode {
 
 export interface RegisteredUser {
   id: string;
-  username: string;
+  firstName: string;
+  lastName: string;
   email: string;
   emailVerified: boolean;
   createdAt: Date;

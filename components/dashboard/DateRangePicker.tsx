@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Calendar } from "@/components/ui/calendar";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon } from "lucide-react";
-import { format, subDays, startOfDay, endOfDay, isSameMonth, isWithinInterval, startOfMonth, endOfMonth, isSameDay, isAfter, isBefore } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRangeManager, type DateRange } from "@/lib/utils/dateRangeUtils";
+import { DayPicker } from "react-day-picker";
 
 interface DateRangePickerProps {
   startDate: Date;
@@ -18,31 +19,30 @@ interface DateRangePickerProps {
 type PresetRange = '7d' | '30d' | '90d' | 'custom';
 
 const presets = [
-  { label: 'Últimos 7 dias', value: '7d' },
-  { label: 'Últimos 30 dias', value: '30d' },
-  { label: 'Últimos 90 dias', value: '90d' },
-  { label: 'Personalizado', value: 'custom' },
+  { label: 'Últimos 7 dias', value: '7d', days: 7 },
+  { label: 'Últimos 30 dias', value: '30d', days: 30 },
+  { label: 'Últimos 90 dias', value: '90d', days: 90 },
+  { label: 'Personalizado', value: 'custom', days: null }
 ];
 
 export function DateRangePicker({ startDate, endDate, onRangeChange }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<PresetRange>('7d');
-  const [tempRange, setTempRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: startDate,
-    to: endDate
-  });
-  const calendarRef = useRef<HTMLDivElement>(null);
-  const [firstMonth, setFirstMonth] = useState(startDate);
-  const [secondMonth, setSecondMonth] = useState(new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1));
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [dateRangeManager] = useState(() => new DateRangeManager(currentMonth));
+  const [range, setRange] = useState<DateRange>({ from: startDate, to: endDate });
 
-  const applyPresetRange = (days: number) => {
-    const end = endOfDay(new Date());
-    const start = startOfDay(subDays(end, days));
-    setTempRange({ from: start, to: end });
-    onRangeChange(start, end);
-  };
+  const updateRange = useCallback((newRange: DateRange) => {
+    if (newRange.from && newRange.to) {
+      const start = startOfDay(newRange.from);
+      const end = endOfDay(newRange.to);
+      setRange({ from: start, to: end });
+      dateRangeManager.setRange({ from: start, to: end });
+      onRangeChange(start, end);
+    }
+  }, [dateRangeManager, onRangeChange]);
 
-  const handlePresetChange = (preset: PresetRange) => {
+  const handlePresetChange = useCallback((preset: PresetRange) => {
     setSelectedPreset(preset);
     
     if (preset === 'custom') {
@@ -50,130 +50,57 @@ export function DateRangePicker({ startDate, endDate, onRangeChange }: DateRange
       return;
     }
 
-    const days = parseInt(preset);
-    applyPresetRange(days);
-    setIsOpen(false);
-  };
-
-  const handleCalendarSelect = (range: { from?: Date; to?: Date } | undefined) => {
-    if (!range) {
-      setTempRange({ from: undefined, to: undefined });
-      return;
-    }
-
-    const newRange = {
-      from: range.from ? startOfDay(range.from) : undefined,
-      to: range.to ? endOfDay(range.to) : undefined
-    };
-
-    setTempRange(newRange);
-
-    if (newRange.from && newRange.to) {
-      onRangeChange(newRange.from, newRange.to);
-      setSelectedPreset('custom');
+    const presetConfig = presets.find(p => p.value === preset);
+    if (presetConfig?.days) {
+      const end = endOfDay(new Date());
+      const start = startOfDay(subDays(end, presetConfig.days - 1));
+      updateRange({ from: start, to: end });
       setIsOpen(false);
     }
-  };
+  }, [updateRange]);
 
-  const handleMonthChange = (month: Date) => {
-    setFirstMonth(month);
-    setSecondMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1));
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
-        if (!tempRange.from || !tempRange.to) return;
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [tempRange]);
+  const handleMonthChange = useCallback((month: Date) => {
+    setCurrentMonth(month);
+    dateRangeManager.setCurrentMonth(month);
+  }, [dateRangeManager]);
 
   useEffect(() => {
-    const daysDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const newRange = { from: startDate, to: endDate };
+    setRange(newRange);
+    dateRangeManager.setRange(newRange);
     
-    const matchingPreset = presets.find(p => {
-      if (p.value === 'custom') return false;
-      return parseInt(p.value) === daysDiff;
-    });
-
+    const daysDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const matchingPreset = presets.find(p => p.value !== 'custom' && p.days === daysDiff);
     setSelectedPreset(matchingPreset ? matchingPreset.value as PresetRange : 'custom');
-    setTempRange({ from: startDate, to: endDate });
-  }, [startDate, endDate]);
+  }, [startDate, endDate, dateRangeManager]);
 
-  const modifiers = {
-    selected: (date: Date) => {
-      if (!tempRange.from || !tempRange.to) return false;
-      return isSameDay(date, tempRange.from) || isSameDay(date, tempRange.to);
-    },
-    rangeStart: (date: Date) => {
-      if (!tempRange.from) return false;
-      return isSameDay(date, tempRange.from);
-    },
-    rangeEnd: (date: Date) => {
-      if (!tempRange.to) return false;
-      return isSameDay(date, tempRange.to);
-    },
-    inRange: (date: Date) => {
-      if (!tempRange.from || !tempRange.to) return false;
-      
-      // Check if the date is within the selected range
-      const isInRange = isWithinInterval(date, {
-        start: startOfDay(tempRange.from),
-        end: endOfDay(tempRange.to)
-      });
-
-      // Check if the date belongs to either the first or second month
-      const belongsToVisibleMonths = 
-        isSameMonth(date, firstMonth) || 
-        isSameMonth(date, secondMonth);
-
-      return isInRange && belongsToVisibleMonths;
-    },
-    outside: (date: Date) => {
-      return !isSameMonth(date, firstMonth) && !isSameMonth(date, secondMonth);
-    }
-  };
+  const modifiers = dateRangeManager.getModifiers();
 
   const modifiersStyles = {
     selected: {
-      backgroundColor: "hsl(var(--primary))",
-      color: "hsl(var(--primary-foreground))",
-      fontWeight: "500"
+      backgroundColor: '#003366',
+      color: 'white',
+      borderRadius: '6px',
     },
     rangeStart: {
-      backgroundColor: "hsl(var(--primary))",
-      color: "hsl(var(--primary-foreground))",
-      borderTopLeftRadius: "0.375rem",
-      borderBottomLeftRadius: "0.375rem",
-      fontWeight: "500"
+      backgroundColor: '#003366',
+      color: 'white',
+      borderRadius: '6px 0 0 6px',
     },
     rangeEnd: {
-      backgroundColor: "hsl(var(--primary))",
-      color: "hsl(var(--primary-foreground))",
-      borderTopRightRadius: "0.375rem",
-      borderBottomRightRadius: "0.375rem",
-      fontWeight: "500"
+      backgroundColor: '#003366',
+      color: 'white',
+      borderRadius: '0 6px 6px 0',
     },
     inRange: {
-      backgroundColor: "hsl(var(--accent) / 0.5)",
-      borderRadius: "0"
+      backgroundColor: 'rgba(0, 51, 102, 0.1)',
+      color: '#003366',
     },
-    outside: {
-      opacity: 0.5,
-      cursor: "default"
-    }
   };
 
   return (
     <div className="flex items-center space-x-4">
-      <Select 
-        value={selectedPreset} 
-        onValueChange={handlePresetChange}
-      >
+      <Select value={selectedPreset} onValueChange={handlePresetChange}>
         <SelectTrigger className="w-[200px]">
           <SelectValue>
             {presets.find(p => p.value === selectedPreset)?.label}
@@ -188,15 +115,7 @@ export function DateRangePicker({ startDate, endDate, onRangeChange }: DateRange
         </SelectContent>
       </Select>
 
-      <Popover 
-        open={isOpen} 
-        onOpenChange={(open) => {
-          if (open) {
-            setSelectedPreset('custom');
-          }
-          setIsOpen(open);
-        }}
-      >
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -208,30 +127,81 @@ export function DateRangePicker({ startDate, endDate, onRangeChange }: DateRange
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             <span>
-              {format(startDate, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-              {format(endDate, "dd/MM/yyyy", { locale: ptBR })}
+              {format(range.from!, "dd/MM/yyyy", { locale: ptBR })} -{" "}
+              {format(range.to!, "dd/MM/yyyy", { locale: ptBR })}
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start" ref={calendarRef}>
-          <Calendar
-            mode="range"
-            defaultMonth={startDate}
-            selected={{
-              from: tempRange.from,
-              to: tempRange.to,
-            }}
-            onSelect={handleCalendarSelect}
-            numberOfMonths={2}
-            locale={ptBR}
-            disabled={{ after: new Date() }}
-            modifiers={modifiers}
-            modifiersStyles={modifiersStyles}
-            onMonthChange={handleMonthChange}
-            showOutsideDays={true}
-            fromMonth={firstMonth}
-            toMonth={secondMonth}
-          />
+        <PopoverContent className="w-auto p-4" align="center">
+          <div className="space-y-4">
+            <DayPicker
+              mode="range"
+              selected={range}
+              month={currentMonth}
+              onMonthChange={handleMonthChange}
+              onSelect={(newRange) => {
+                if (newRange?.from && newRange?.to) {
+                  updateRange(newRange);
+                }
+              }}
+              numberOfMonths={2}
+              disabled={{ after: new Date() }}
+              modifiers={modifiers}
+              modifiersStyles={modifiersStyles}
+              showOutsideDays={false}
+              locale={ptBR}
+              styles={{
+                months: { display: 'flex', gap: '1rem' },
+                month: { margin: 0 },
+                caption: { position: 'relative', marginBottom: '0.5rem' },
+                caption_label: { fontSize: '0.875rem', fontWeight: 500 },
+                nav: { display: 'flex', gap: '0.25rem' },
+                nav_button: {
+                  padding: '0.25rem',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  opacity: 0.5,
+                  transition: 'opacity 0.2s',
+                  ':hover': { opacity: 1 },
+                },
+                table: { width: '100%', borderCollapse: 'collapse' },
+                head_row: { display: 'flex', marginBottom: '0.5rem' },
+                head_cell: { 
+                  width: '2.25rem', 
+                  textAlign: 'center',
+                  color: 'var(--muted-foreground)',
+                  fontSize: '0.75rem'
+                },
+                row: { display: 'flex', width: '100%', marginTop: '0.5rem' },
+                cell: { 
+                  width: '2.25rem',
+                  height: '2.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  position: 'relative',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  ':hover': {
+                    backgroundColor: 'rgba(0, 51, 102, 0.1)',
+                  }
+                },
+                day: {
+                  margin: 0,
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+                day_outside: { opacity: 0.5 },
+                day_disabled: { opacity: 0.5, cursor: 'not-allowed' },
+              }}
+            />
+          </div>
         </PopoverContent>
       </Popover>
     </div>

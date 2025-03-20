@@ -49,6 +49,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 type DatePreset = '7d' | '30d' | '90d' | 'custom';
 
@@ -307,111 +314,449 @@ export function TimelineControl({
     setIsCalendarOpen(false);
   };
 
-  return (
-    <div className="relative z-50">
-      <Card className="p-4 relative bg-white">
-        <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-4">
-            <Popover 
-              open={isStationSelectorOpen} 
-              onOpenChange={setIsStationSelectorOpen}
-            >
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[300px] justify-between">
-                  <span>Estações ({selectedStations.length})</span>
-                  <CloudSun className="h-4 w-4 ml-2" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Buscar estação..." />
-                  <CommandList>
-                    <CommandEmpty>Nenhuma estação encontrada.</CommandEmpty>
-                    <CommandGroup>
-                      <div className="p-2 border-b">
-                        <div className="flex justify-between">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedStations(weatherStations.map(s => s.id));
-                              setIsStationSelectorOpen(false);
-                            }}
-                            className="text-xs hover:text-[#003366] hover:bg-[#003366]/10"
-                          >
-                            Selecionar Todas
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const defaultStation = weatherStations[0]?.id;
-                              if (defaultStation) {
-                                setSelectedStations([defaultStation]);
-                              }
-                              setIsStationSelectorOpen(false);
-                            }}
-                            className="text-xs hover:text-[#003366] hover:bg-[#003366]/10"
-                          >
-                            Limpar Seleção
-                          </Button>
-                        </div>
+  // Desktop layout rendering
+  const desktopLayout = (
+    <div className="hidden sm:flex items-center gap-4 pb-4 border-b border-gray-100">
+      <div className="flex items-center gap-4">
+        <Popover 
+          open={isStationSelectorOpen} 
+          onOpenChange={setIsStationSelectorOpen}
+        >
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[300px] justify-between">
+              <span>Estações ({selectedStations.length})</span>
+              <CloudSun className="h-4 w-4 ml-2" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Buscar estação..." />
+              <CommandList>
+                <CommandEmpty>Nenhuma estação encontrada.</CommandEmpty>
+                <CommandGroup>
+                  <div className="p-2 border-b">
+                    <div className="flex justify-between">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedStations(weatherStations.map(s => s.id));
+                          setIsStationSelectorOpen(false);
+                        }}
+                        className="text-xs hover:text-[#003366] hover:bg-[#003366]/10"
+                      >
+                        Selecionar Todas
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const defaultStation = weatherStations[0]?.id;
+                          if (defaultStation) {
+                            setSelectedStations([defaultStation]);
+                          }
+                          setIsStationSelectorOpen(false);
+                        }}
+                        className="text-xs hover:text-[#003366] hover:bg-[#003366]/10"
+                      >
+                        Limpar Seleção
+                      </Button>
+                    </div>
+                  </div>
+                  {weatherStations.map((station) => (
+                    <CommandItem
+                      key={station.id}
+                      value={station.name}
+                      className="flex items-center justify-between py-2 cursor-pointer data-[disabled]:pointer-events-auto hover:bg-[#003366]/10"
+                      onSelect={(currentValue) => {
+                        handleStationToggle(station.id);
+                      }}
+                    >
+                      <span>{station.name}</span>
+                      <div
+                        className={cn(
+                          "flex h-4 w-4 items-center justify-center rounded-sm border transition-colors cursor-pointer",
+                          selectedStations.includes(station.id)
+                            ? "bg-[#003366] border-[#003366] text-white"
+                            : "border-[#003366] hover:border-[#004080]"
+                        )}
+                      >
+                        {selectedStations.includes(station.id) && (
+                          <Check className="h-3 w-3" />
+                        )}
                       </div>
-                      {weatherStations.map((station) => (
-                        <CommandItem
-                          key={station.id}
-                          value={station.name}
-                          className="flex items-center justify-between py-2 cursor-pointer data-[disabled]:pointer-events-auto hover:bg-[#003366]/10"
-                          onSelect={(currentValue) => {
-                            handleStationToggle(station.id);
-                          }}
-                        >
-                          <span>{station.name}</span>
-                          <div
-                            className={cn(
-                              "flex h-4 w-4 items-center justify-center rounded-sm border transition-colors cursor-pointer",
-                              selectedStations.includes(station.id)
-                                ? "bg-[#003366] border-[#003366] text-white"
-                                : "border-[#003366] hover:border-[#004080]"
-                            )}
-                          >
-                            {selectedStations.includes(station.id) && (
-                              <Check className="h-3 w-3" />
-                            )}
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
 
-            <div className="flex flex-wrap gap-2">
-              {selectedStations.map(stationId => {
-                const station = weatherStations.find(s => s.id === stationId);
-                if (!station) return null;
-                return (
-                  <Badge
-                    key={station.id}
-                    variant="secondary"
-                    className="flex items-center gap-1 bg-[#003366]/10 text-[#003366] hover:bg-[#003366]/20"
+        <div className="flex flex-wrap gap-2">
+          {selectedStations.map(stationId => {
+            const station = weatherStations.find(s => s.id === stationId);
+            if (!station) return null;
+            return (
+              <Badge
+                key={station.id}
+                variant="secondary"
+                className="flex items-center gap-1 bg-[#003366]/10 text-[#003366] hover:bg-[#003366]/20"
+              >
+                {station.name}
+                {selectedStations.length > 1 && (
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-[#004080]"
+                    onClick={() => handleStationToggle(station.id)}
+                  />
+                )}
+              </Badge>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Mobile layout - station selection drawer
+  const mobileStationSelector = (
+    <div className="sm:hidden mb-4">
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" className="w-full justify-between">
+            <span className="truncate">Estações ({selectedStations.length})</span>
+            <CloudSun className="h-4 w-4 ml-2 flex-shrink-0" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="h-[80vh]">
+          <SheetHeader>
+            <SheetTitle>Selecionar Estações</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <div className="flex justify-between mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedStations(weatherStations.map(s => s.id));
+                }}
+                className="text-xs"
+              >
+                Selecionar Todas
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const defaultStation = weatherStations[0]?.id;
+                  if (defaultStation) {
+                    setSelectedStations([defaultStation]);
+                  }
+                }}
+                className="text-xs"
+              >
+                Limpar Seleção
+              </Button>
+            </div>
+            
+            <div className="space-y-3 mt-4">
+              {weatherStations.map((station) => (
+                <div 
+                  key={station.id}
+                  className="flex items-center justify-between p-3 border rounded-md"
+                >
+                  <span>{station.name}</span>
+                  <Button
+                    variant={selectedStations.includes(station.id) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleStationToggle(station.id)}
+                    className={selectedStations.includes(station.id) ? "bg-[#003366]" : ""}
                   >
-                    {station.name}
-                    {selectedStations.length > 1 && (
-                      <X
-                        className="h-3 w-3 cursor-pointer hover:text-[#004080]"
-                        onClick={() => handleStationToggle(station.id)}
-                      />
+                    {selectedStations.includes(station.id) ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      "Selecionar"
                     )}
-                  </Badge>
-                );
-              })}
+                  </Button>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        </SheetContent>
+      </Sheet>
+      
+      <div className="flex flex-wrap gap-2 mt-3">
+        {selectedStations.map(stationId => {
+          const station = weatherStations.find(s => s.id === stationId);
+          if (!station) return null;
+          return (
+            <Badge
+              key={station.id}
+              variant="secondary"
+              className="flex items-center gap-1 bg-[#003366]/10 text-[#003366] hover:bg-[#003366]/20"
+            >
+              {station.name}
+              {selectedStations.length > 1 && (
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-[#004080]"
+                  onClick={() => handleStationToggle(station.id)}
+                />
+              )}
+            </Badge>
+          );
+        })}
+      </div>
+    </div>
+  );
 
-        <div className="flex items-center justify-between pt-4">
+  // Controls section - desktop view
+  const controlsDesktop = (
+    <div className="hidden sm:flex items-center justify-between pt-4">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={togglePlayback}
+          className="hover:bg-[#003366]/10 hover:text-[#003366]"
+        >
+          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={resetTimeline}
+          className="hover:bg-[#003366]/10 hover:text-[#003366]"
+        >
+          <SkipBack className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <Select value={selectedPreset} onValueChange={handlePresetChange}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue>
+              {datePresets.find(p => p.value === selectedPreset)?.label}
+            </SelectValue>
+            <Filter className="w-4 h-4 ml-2" />
+          </SelectTrigger>
+          <SelectContent>
+            {datePresets.map((preset) => (
+              <SelectItem 
+                key={preset.value} 
+                value={preset.value}
+                className="hover:bg-[#003366]/10 focus:bg-[#003366]/10 focus:text-[#003366]"
+              >
+                {preset.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Popover 
+          open={isCalendarOpen} 
+          onOpenChange={(open) => {
+            if (open) {
+              setSelectedPreset('custom');
+            }
+            setIsCalendarOpen(open);
+          }}
+        >
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[300px] justify-between">
+              <span>
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, DATE_FORMAT, { locale: ptBR })} -{" "}
+                      {format(dateRange.to, DATE_FORMAT, { locale: ptBR })}
+                    </>
+                  ) : (
+                    format(dateRange.from, DATE_FORMAT, { locale: ptBR })
+                  )
+                ) : (
+                  "Selecione um período"
+                )}
+              </span>
+              <Calendar className="w-4 h-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-4" align="center">
+            <div className="grid gap-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <TooltipProvider>
+                    <Tooltip open={!!inputErrors.start}>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Input
+                            placeholder={DATE_FORMAT}
+                            value={inputValues.start}
+                            onChange={(e) => handleInputChange(e.target.value, "start")}
+                            className={cn(
+                              inputErrors.start && "border-red-500 focus-visible:ring-red-500",
+                              "focus-visible:ring-[#003366] focus-visible:border-[#003366]"
+                            )}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      {inputErrors.start && (
+                        <TooltipContent>
+                          <p>{inputErrors.start}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div>
+                  <TooltipProvider>
+                    <Tooltip open={!!inputErrors.end}>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Input
+                            placeholder={DATE_FORMAT}
+                            value={inputValues.end}
+                            onChange={(e) => handleInputChange(e.target.value, "end")}
+                            className={cn(
+                              inputErrors.end && "border-red-500 focus-visible:ring-red-500",
+                              "focus-visible:ring-[#003366] focus-visible:border-[#003366]"
+                            )}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      {inputErrors.end && (
+                        <TooltipContent>
+                          <p>{inputErrors.end}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              
+              <CalendarComponent
+                mode="range"
+                selected={{
+                  from: dateRange.from,
+                  to: dateRange.to
+                }}
+                onSelect={handleDateRangeSelect}
+                numberOfMonths={2}
+                disabled={{ after: new Date() }}
+                locale={ptBR}
+                className="rounded-md border shadow"
+                showOutsideDays={true}
+                classNames={{
+                  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                  month: "space-y-4",
+                  caption: "flex justify-center pt-1 relative items-center",
+                  caption_label: "text-sm font-medium",
+                  nav: "space-x-1 flex items-center",
+                  nav_button: cn(
+                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                    "hover:bg-[#003366] hover:text-white rounded-md transition-colors"
+                  ),
+                  nav_button_previous: "absolute left-1",
+                  nav_button_next: "absolute right-1",
+                  table: "w-full border-collapse space-y-1",
+                  head_row: "flex",
+                  head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                  row: "flex w-full mt-2",
+                  cell: cn(
+                    "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
+                    "[&:has([aria-selected])]:bg-transparent"
+                  ),
+                  day: cn(
+                    "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                    "hover:bg-[#003366]/10 hover:text-[#003366]",
+                    "focus:bg-[#003366]/10 focus:text-[#003366]",
+                    "transition-colors rounded-md"
+                  ),
+                  day_range_start: "rounded-l-md bg-[#003366] text-white hover:bg-[#004080] hover:text-white focus:bg-[#004080] focus:text-white",
+                  day_range_end: "rounded-r-md bg-[#003366] text-white hover:bg-[#004080] hover:text-white focus:bg-[#004080] focus:text-white",
+                  day_selected: "bg-[#003366] text-white hover:bg-[#004080] hover:text-white focus:bg-[#004080] focus:text-white",
+                  day_today: "bg-accent text-accent-foreground",
+                  day_outside: "text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground",
+                  day_disabled: "text-muted-foreground opacity-50 cursor-not-allowed",
+                  day_range_middle: "aria-selected:bg-[#003366]/10 aria-selected:text-[#003366] [&.day_outside]:bg-transparent [&.day_outside]:text-muted-foreground",
+                  day_hidden: "invisible"
+                }}
+              />
+
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDateRange({ from: timelineState.startDate, to: timelineState.endDate });
+                    setInputValues({ start: "", end: "" });
+                    setInputErrors({ start: "", end: "" });
+                  }}
+                  className="text-muted-foreground hover:text-[#003366] hover:bg-[#003366]/10"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Limpar
+                </Button>
+                <div className="space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDateRange({
+                        from: timelineState.startDate,
+                        to: timelineState.endDate
+                      });
+                      setInputValues({
+                        start: format(timelineState.startDate, DATE_FORMAT),
+                        end: format(timelineState.endDate, DATE_FORMAT)
+                      });
+                      setInputErrors({ start: "", end: "" });
+                      setIsCalendarOpen(false);
+                    }}
+                    className="hover:bg-[#003366]/10 hover:text-[#003366]"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleApplyDateRange}
+                    disabled={!dateRange.from || !dateRange.to || !!inputErrors.start || !!inputErrors.end}
+                    className="bg-[#003366] hover:bg-[#004080] text-white"
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <Button
+          variant="outline"
+          onClick={clearFilters}
+          className="flex items-center gap-2 hover:bg-[#003366]/10 hover:text-[#003366]"
+        >
+          <span>Limpar Filtros</span>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Button
+        variant="outline"
+        onClick={onExport}
+        className="flex items-center gap-2 hover:bg-[#003366]/10 hover:text-[#003366]"
+        disabled={selectedStations.length === 0}
+      >
+        <span>Gerar Relatório</span>
+        <Download className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
+  // Controls section - mobile view
+  const controlsMobile = (
+    <div className="sm:hidden">
+      <div className="flex flex-col gap-4 border-t pt-4">
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -431,225 +776,131 @@ export function TimelineControl({
             </Button>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Select value={selectedPreset} onValueChange={handlePresetChange}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue>
-                  {datePresets.find(p => p.value === selectedPreset)?.label}
-                </SelectValue>
-                <Filter className="w-4 h-4 ml-2" />
-              </SelectTrigger>
-              <SelectContent>
-                {datePresets.map((preset) => (
-                  <SelectItem 
-                    key={preset.value} 
-                    value={preset.value}
-                    className="hover:bg-[#003366]/10 focus:bg-[#003366]/10 focus:text-[#003366]"
-                  >
-                    {preset.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="text-xs">Período</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[80vh]">
+              <SheetHeader>
+                <SheetTitle>Selecionar Período</SheetTitle>
+              </SheetHeader>
+              <div className="py-4 space-y-4">
+                <Select value={selectedPreset} onValueChange={handlePresetChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {datePresets.find(p => p.value === selectedPreset)?.label}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {datePresets.map((preset) => (
+                      <SelectItem key={preset.value} value={preset.value}>
+                        {preset.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Popover 
-              open={isCalendarOpen} 
-              onOpenChange={(open) => {
-                if (open) {
-                  setSelectedPreset('custom');
-                }
-                setIsCalendarOpen(open);
-              }}
-            >
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[300px] justify-between">
-                  <span>
-                    {dateRange.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, DATE_FORMAT, { locale: ptBR })} -{" "}
-                          {format(dateRange.to, DATE_FORMAT, { locale: ptBR })}
-                        </>
-                      ) : (
-                        format(dateRange.from, DATE_FORMAT, { locale: ptBR })
-                      )
-                    ) : (
-                      "Selecione um período"
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Data inicial</p>
+                    <Input
+                      placeholder={DATE_FORMAT}
+                      value={inputValues.start}
+                      onChange={(e) => handleInputChange(e.target.value, "start")}
+                      className={cn(
+                        inputErrors.start && "border-red-500"
+                      )}
+                    />
+                    {inputErrors.start && (
+                      <p className="text-xs text-red-500 mt-1">{inputErrors.start}</p>
                     )}
-                  </span>
-                  <Calendar className="w-4 h-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-4" align="center">
-                <div className="grid gap-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <TooltipProvider>
-                        <Tooltip open={!!inputErrors.start}>
-                          <TooltipTrigger asChild>
-                            <div>
-                              <Input
-                                placeholder={DATE_FORMAT}
-                                value={inputValues.start}
-                                onChange={(e) => handleInputChange(e.target.value, "start")}
-                                className={cn(
-                                  inputErrors.start && "border-red-500 focus-visible:ring-red-500",
-                                  "focus-visible:ring-[#003366] focus-visible:border-[#003366]"
-                                )}
-                              />
-                            </div>
-                          </TooltipTrigger>
-                          {inputErrors.start && (
-                            <TooltipContent>
-                              <p>{inputErrors.start}</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <div>
-                      <TooltipProvider>
-                        <Tooltip open={!!inputErrors.end}>
-                          <TooltipTrigger asChild>
-                            <div>
-                              <Input
-                                placeholder={DATE_FORMAT}
-                                value={inputValues.end}
-                                onChange={(e) => handleInputChange(e.target.value, "end")}
-                                className={cn(
-                                  inputErrors.end && "border-red-500 focus-visible:ring-red-500",
-                                  "focus-visible:ring-[#003366] focus-visible:border-[#003366]"
-                                )}
-                              />
-                            </div>
-                          </TooltipTrigger>
-                          {inputErrors.end && (
-                            <TooltipContent>
-                              <p>{inputErrors.end}</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
                   </div>
-                  
-                  <CalendarComponent
-                    mode="range"
-                    selected={{
-                      from: dateRange.from,
-                      to: dateRange.to
-                    }}
-                    onSelect={handleDateRangeSelect}
-                    numberOfMonths={2}
-                    disabled={{ after: new Date() }}
-                    locale={ptBR}
-                    className="rounded-md border shadow"
-                    showOutsideDays={true}
-                    classNames={{
-                      months: "flex space-x-4 p-1",
-                      month: "space-y-4",
-                      caption: "flex justify-center pt-1 relative items-center",
-                      caption_label: "text-sm font-medium",
-                      nav: "space-x-1 flex items-center",
-                      nav_button: cn(
-                        "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-                        "hover:bg-[#003366] hover:text-white rounded-md transition-colors"
-                      ),
-                      nav_button_previous: "absolute left-1",
-                      nav_button_next: "absolute right-1",
-                      table: "w-full border-collapse space-y-1",
-                      head_row: "flex",
-                      head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-                      row: "flex w-full mt-2",
-                      cell: cn(
-                        "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
-                        "[&:has([aria-selected])]:bg-transparent"
-                      ),
-                      day: cn(
-                        "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
-                        "hover:bg-[#003366]/10 hover:text-[#003366]",
-                        "focus:bg-[#003366]/10 focus:text-[#003366]",
-                        "transition-colors rounded-md"
-                      ),
-                      day_range_start: "rounded-l-md bg-[#003366] text-white hover:bg-[#004080] hover:text-white focus:bg-[#004080] focus:text-white",
-                      day_range_end: "rounded-r-md bg-[#003366] text-white hover:bg-[#004080] hover:text-white focus:bg-[#004080] focus:text-white",
-                      day_selected: "bg-[#003366] text-white hover:bg-[#004080] hover:text-white focus:bg-[#004080] focus:text-white",
-                      day_today: "bg-accent text-accent-foreground",
-                      day_outside: "text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground",
-                      day_disabled: "text-muted-foreground opacity-50 cursor-not-allowed",
-                      day_range_middle: "aria-selected:bg-[#003366]/10 aria-selected:text-[#003366] [&.day_outside]:bg-transparent [&.day_outside]:text-muted-foreground",
-                      day_hidden: "invisible"
-                    }}
-                  />
-
-                  <div className="flex items-center justify-between">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setDateRange({ from: timelineState.startDate, to: timelineState.endDate });
-                        setInputValues({ start: "", end: "" });
-                        setInputErrors({ start: "", end: "" });
-                      }}
-                      className="text-muted-foreground hover:text-[#003366] hover:bg-[#003366]/10"
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Limpar
-                    </Button>
-                    <div className="space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setDateRange({
-                            from: timelineState.startDate,
-                            to: timelineState.endDate
-                          });
-                          setInputValues({
-                            start: format(timelineState.startDate, DATE_FORMAT),
-                            end: format(timelineState.endDate, DATE_FORMAT)
-                          });
-                          setInputErrors({ start: "", end: "" });
-                          setIsCalendarOpen(false);
-                        }}
-                        className="hover:bg-[#003366]/10 hover:text-[#003366]"
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleApplyDateRange}
-                        disabled={!dateRange.from || !dateRange.to || !!inputErrors.start || !!inputErrors.end}
-                        className="bg-[#003366] hover:bg-[#004080] text-white"
-                      >
-                        Aplicar
-                      </Button>
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium mb-1">Data final</p>
+                    <Input
+                      placeholder={DATE_FORMAT}
+                      value={inputValues.end}
+                      onChange={(e) => handleInputChange(e.target.value, "end")}
+                      className={cn(
+                        inputErrors.end && "border-red-500"
+                      )}
+                    />
+                    {inputErrors.end && (
+                      <p className="text-xs text-red-500 mt-1">{inputErrors.end}</p>
+                    )}
                   </div>
                 </div>
-              </PopoverContent>
-            </Popover>
+                
+                <CalendarComponent
+                  mode="range"
+                  selected={{
+                    from: dateRange.from,
+                    to: dateRange.to
+                  }}
+                  onSelect={handleDateRangeSelect}
+                  disabled={{ after: new Date() }}
+                  locale={ptBR}
+                  className="rounded-md border shadow"
+                />
 
-            <Button
-              variant="outline"
-              onClick={clearFilters}
-              className="flex items-center gap-2 hover:bg-[#003366]/10 hover:text-[#003366]"
-            >
-              <span>Limpar Filtros</span>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+                <div className="flex justify-between pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Limpar Filtros
+                  </Button>
+                  <Button
+                    onClick={handleApplyDateRange}
+                    disabled={!dateRange.from || !dateRange.to || !!inputErrors.start || !!inputErrors.end}
+                    className="bg-[#003366]"
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={clearFilters}
+            className="flex-1 mr-2"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Limpar Filtros
+          </Button>
 
           <Button
             variant="outline"
             onClick={onExport}
-            className="flex items-center gap-2 hover:bg-[#003366]/10 hover:text-[#003366]"
+            className="flex-1 ml-2"
             disabled={selectedStations.length === 0}
           >
-            <span>Gerar Relatório</span>
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4 mr-2" />
+            Relatório
           </Button>
         </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative z-50">
+      <Card className="p-4 relative bg-white">
+        {desktopLayout}
+        {mobileStationSelector}
+        {controlsDesktop}
+        {controlsMobile}
       </Card>
     </div>
   );

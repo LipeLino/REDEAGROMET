@@ -1,163 +1,116 @@
 "use client";
 
-import { UserRegistration, VerificationCode } from '@/lib/types/auth';
+import { UserRegistration, VerificationCode, RegisteredUser } from '@/lib/types/auth';
 
-// In-memory storage (replace with database in production)
-const verificationCodes = new Map<string, VerificationCode>();
-const registeredUsers = new Map<string, UserRegistration>();
-
-// Simulated rate limiter
-class RateLimiter {
-  private attempts = new Map<string, number[]>();
-  private maxAttempts = 5;
-  private windowMs = 3600000; // 1 hour
-
-  consume(key: string): boolean {
-    const now = Date.now();
-    const attempts = this.attempts.get(key) || [];
-    
-    // Remove expired attempts
-    const validAttempts = attempts.filter(time => now - time < this.windowMs);
-    
-    if (validAttempts.length >= this.maxAttempts) {
-      return false;
-    }
-    
-    validAttempts.push(now);
-    this.attempts.set(key, validAttempts);
-    return true;
-  }
-}
-
-const rateLimiter = new RateLimiter();
-
-// Simple password hashing (for demo purposes)
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-export async function registerUser(userData: UserRegistration) {
+export async function registerUser(data: UserRegistration) {
   try {
-    // Rate limiting check
-    if (!rateLimiter.consume(userData.email)) {
-      throw new Error('Muitas tentativas. Tente novamente mais tarde.');
-    }
-
-    // Check if email is already registered
-    if (registeredUsers.has(userData.email)) {
-      throw new Error('Email já cadastrado');
-    }
-
-    // Hash password
-    const hashedPassword = await hashPassword(userData.password);
-
-    // Generate verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Store verification code
-    verificationCodes.set(userData.email, {
-      code: verificationCode,
-      email: userData.email,
-      expiresAt,
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: data.fullName,
+        email: data.email
+      }),
     });
 
-    // Store user data
-    registeredUsers.set(userData.email, {
-      ...userData,
-      password: hashedPassword,
-    });
-
-    // In a real application, this would send an email
-    console.log('Verification code for', userData.email, ':', verificationCode);
-
-    return {
-      success: true,
-      message: 'Código de verificação enviado para seu email',
-      // For demo purposes only, remove in production
-      code: verificationCode,
-    };
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.message || 'Falha ao enviar email');
+    }
+    
+    return { success: true, message: 'Email enviado com sucesso' };
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    }
-    throw new Error('Erro ao registrar usuário');
+    console.error('Email error:', error);
+    throw error;
   }
 }
 
 export async function verifyEmail(email: string, code: string) {
-  const verification = verificationCodes.get(email);
+  try {
+    console.log('Verifying email with code:', email, code);
+    
+    // Add request timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
+    
+    const response = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, code }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log('Verification API response status:', response.status);
+    const data = await response.json();
+    console.log('Verification API response:', data);
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Erro na verificação');
+    }
 
-  if (!verification) {
-    throw new Error('Código de verificação não encontrado');
-  }
-
-  if (new Date() > verification.expiresAt) {
-    verificationCodes.delete(email);
-    throw new Error('Código de verificação expirado');
-  }
-
-  if (verification.code !== code) {
-    throw new Error('Código de verificação inválido');
-  }
-
-  // Mark email as verified
-  const user = registeredUsers.get(email);
-  if (user) {
-    const verifiedUser = {
-      id: crypto.randomUUID(),
-      username: user.username,
-      email: user.email,
-      emailVerified: true,
-      createdAt: new Date(),
-      accessLevel: getAccessLevel(email),
+    return {
+      success: true,
+      accessLevel: data.accessLevel,
     };
-    registeredUsers.set(email, { ...user, emailVerified: true });
+  } catch (error) {
+    console.error('Verification error:', error);
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Tempo limite da solicitação excedido. Verifique sua conexão de internet.');
+      }
+      throw new Error(error.message);
+    }
+    throw new Error('Erro ao verificar email');
   }
-
-  // Clean up verification code
-  verificationCodes.delete(email);
-
-  return {
-    success: true,
-    accessLevel: getAccessLevel(email),
-  };
 }
 
 export async function resendVerificationCode(email: string) {
-  const user = registeredUsers.get(email);
-  if (!user) {
-    throw new Error('Usuário não encontrado');
+  try {
+    console.log('Resending verification code for:', email);
+    
+    // Add request timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
+    
+    const response = await fetch('/api/auth/resend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log('Resend API response status:', response.status);
+    const data = await response.json();
+    console.log('Resend API response:', data);
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Erro ao reenviar código');
+    }
+
+    return {
+      success: true,
+      message: 'Novo código de verificação enviado',
+      verificationCode: data.verificationCode // Only available in development
+    };
+  } catch (error) {
+    console.error('Resend verification code error:', error);
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Tempo limite da solicitação excedido. Verifique sua conexão de internet.');
+      }
+      throw new Error(error.message);
+    }
+    throw new Error('Erro ao reenviar código de verificação');
   }
-
-  // Generate new verification code
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  verificationCodes.set(email, {
-    code: verificationCode,
-    email,
-    expiresAt,
-  });
-
-  // In a real application, this would send an email
-  console.log('New verification code for', email, ':', verificationCode);
-
-  return {
-    success: true,
-    message: 'Novo código de verificação enviado',
-    // For demo purposes only, remove in production
-    code: verificationCode,
-  };
-}
-
-function getAccessLevel(email: string): 'full' | 'limited' {
-  return email.endsWith('@uemg.br') || email.endsWith('@discente.uemg.br')
-    ? 'full'
-    : 'limited';
 }

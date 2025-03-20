@@ -11,9 +11,9 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-lg mb-4">Contato</h3>
             <div className="space-y-2">
-              <a href="mailto:contato@uemg.br" className="flex items-center gap-2 hover:text-gray-300">
+              <a href="mailto:suporte@redeagromet.com.br" className="flex items-center gap-2 hover:text-gray-300">
                 <Mail className="w-4 h-4" />
-                contato@uemg.br
+                suporte@redeagromet.com.br
               </a>
               <a href="tel:+553434234433" className="flex items-center gap-2 hover:text-gray-300">
                 <Phone className="w-4 h-4" />
