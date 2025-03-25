@@ -8,18 +8,18 @@ import { cn } from "@/lib/utils";
 const slides = [
   {
     id: 1,
-    url: "https://images.unsplash.com/photo-1560493676-04071c5f467b?auto=format&fit=crop&q=80",
-    alt: "Agricultural field with modern irrigation system"
+    url: "/images/slides/estacao_prata.jpg",
+    alt: "Estação meteorológica em Prata, MG"
   },
   {
     id: 2,
-    url: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80",
-    alt: "Weather monitoring station in field"
+    url: "/images/slides/estacao_frutal.jpg",
+    alt: "Estação meteorológica em Frutal, MG"
   },
   {
     id: 3,
-    url: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80",
-    alt: "Agricultural technology and data monitoring"
+    url: "/images/slides/estacao_sales.jpg",
+    alt: "Estação meteorológica em São Francisco de Sales, MG"
   }
 ];
 
@@ -111,7 +111,7 @@ export function HeroSection() {
               <div
                 key={slide.id}
                 className={cn(
-                  "absolute inset-0 transition-all duration-750 ease-in-out transform",
+                  "absolute inset-0 transition-all duration-750 ease-in-out transform group",
                   index === currentSlide 
                     ? "opacity-100 translate-x-0" 
                     : index < currentSlide 
@@ -128,6 +128,11 @@ export function HeroSection() {
                   priority={index === 0}
                   sizes="(max-width: 640px) 280px, (max-width: 768px) 350px, (max-width: 1024px) 400px, 550px"
                 />
+                
+                {/* Alt text overlay */}
+                <div className="absolute top-0 left-0 right-0 bg-black/70 text-white py-2 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
+                  {slide.alt}
+                </div>
               </div>
             ))}
 

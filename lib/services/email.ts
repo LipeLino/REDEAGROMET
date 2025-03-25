@@ -34,7 +34,7 @@ export async function sendVerificationEmail(email: string, code: string, fullNam
     const mailOptions = {
       from: {
         name: 'Rede Agrometeorológica',
-        address: 'noreply@redeagromet.com.br'
+        address: 'suporte@redeagromet.com.br'
       },
       to: email,
       subject: 'Verificação de Email - Rede Agrometeorológica',

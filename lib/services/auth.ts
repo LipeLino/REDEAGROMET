@@ -77,7 +77,7 @@ export async function resendVerificationCode(email: string) {
     
     // Add request timeout handling
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     
     const response = await fetch('/api/auth/resend', {
       method: 'POST',
@@ -91,6 +91,15 @@ export async function resendVerificationCode(email: string) {
     clearTimeout(timeoutId);
     
     console.log('Resend API response status:', response.status);
+    
+    // Check if the response is not JSON (likely HTML error page)
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const htmlResponse = await response.text();
+      console.error('Server returned non-JSON response:', htmlResponse.substring(0, 200) + '...');
+      throw new Error('O servidor encontrou um erro. Por favor, tente novamente mais tarde.');
+    }
+    
     const data = await response.json();
     console.log('Resend API response:', data);
     
@@ -101,7 +110,7 @@ export async function resendVerificationCode(email: string) {
     return {
       success: true,
       message: 'Novo código de verificação enviado',
-      verificationCode: data.verificationCode // Only available in development
+      verificationCode: data.verificationCode
     };
   } catch (error) {
     console.error('Resend verification code error:', error);

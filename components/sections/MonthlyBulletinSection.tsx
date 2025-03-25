@@ -10,8 +10,8 @@ export function MonthlyBulletinSection() {
     lastUpdate: "15/05/2025",
     fileSize: "0.5 MB",
     description: `O Boletim Mensal de Monitoramento Agrometeorológico do Triângulo Mineiro Sul apresenta dados climáticos detalhados do mês anterior, incluindo análises comparativas, tendências e recomendações específicas para culturas sazonais. Elaborado pela equipe técnica da UEMG – Frutal com apoio da FAPEMIG, este documento oferece informações cruciais para o planejamento agrícola mensal.`,
-    downloadUrl: "/BOLETIM MENSAL DE MONITORAMENTO AGROMETEOROLÓGICO DO TRIÂNGULO MINEIRO SUL MAIO 2025.pdf",
-    previewUrl: "/images/monthly-bulletin-preview.png",
+    downloadUrl: "Boletim Mensal - Fevereiro.pdf",
+    previewUrl: "/images/boletimprata.jpg",
   };
 
   return (
@@ -34,10 +34,13 @@ export function MonthlyBulletinSection() {
           {/* Preview Image and Download - Left Side */}
           <div className="w-full sm:w-[350px] lg:w-[400px] space-y-6 sm:space-y-8 animate-slide-up">
             <div className="relative w-full h-[400px] sm:h-[450px] overflow-hidden rounded-lg shadow-2xl transform transition-all duration-500 hover:scale-[1.02] hover:shadow-3xl">
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-500">
-                <FileText className="w-16 h-16 opacity-30" />
-                <span className="sr-only">Prévia do boletim mensal</span>
-              </div>
+              <Image
+                src={bulletinInfo.previewUrl}
+                alt="Prévia do boletim mensal"
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 350px, 400px"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
             </div>
 

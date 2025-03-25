@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+  secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD
@@ -22,8 +22,11 @@ async function sendRegistrationConfirmation(user, confirmationToken) {
   
   // Email content
   const mailOptions = {
-    from: `"REDEAGROMET" <${process.env.SMTP_USER}>`,
-    to: user.email,
+    from: "Suporte Rede Agromet <suporte@redeagromet.com.br>", // Must have username@domain format
+    envelope: {
+      from: "suporte@redeagromet.com.br", // Just the email without display name in envelope
+      to: user.email
+    },
     subject: 'Please confirm your registration',
     text: `Hello ${user.name},\n\nThank you for registering with REDEAGROMET. Please confirm your email address by clicking the link below:\n\n${confirmationUrl}\n\nThis link will expire in 24 hours.\n\nIf you did not create an account, please ignore this email.\n\nRegards,\nThe REDEAGROMET Team`,
     html: `

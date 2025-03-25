@@ -16,7 +16,7 @@ export async function sendVerificationEmail(email: string, code: string, name: s
     console.log(`Sending verification email to ${email} with code ${code}`);
     
     const info = await transporter.sendMail({
-      from: `"REDEAGROMET" <${process.env.SMTP_USER}>`,
+      from: `"comunica@redeagromet.com.br" <${process.env.SMTP_USER}>`,
       to: email,
       subject: "Verifique seu email - REDEAGROMET",
       text: `Olá ${name},\n\nSeu código de verificação é: ${code}\n\nEste código expira em 10 minutos.\n\nAtenciosamente,\nEquipe REDEAGROMET`,
