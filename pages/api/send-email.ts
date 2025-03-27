@@ -2,120 +2,140 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import nodemailer from 'nodemailer';
 
+// Armazenamento temporário para os códigos de verificação
+const verificationCodes = new Map<string, string>();
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   console.log('API route hit:', req.method, req.body);
-  
+
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
-  try {
-    const { name, email } = req.body;
-    
+  // Podemos usar um parâmetro "action" para diferenciar envio e verificação
+  const { action, name, email, code: providedCode } = req.body;
+  console.log('Action requested:', action, 'for email:', email);
+
+  // Para gerar e enviar o código
+  if (action === 'generateCode') {
+    console.log('Generating verification code for:', email);
     if (!name || !email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Missing required fields: name and email' 
+      console.log('Missing required fields');
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: name and email',
       });
     }
-    
+
+    // Gera um código simples de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('Generated code:', code, 'for email:', email);
+
+    // Armazena internamente (use DB em produção)
+    verificationCodes.set(email, code);
+    console.log('Stored codes:', Array.from(verificationCodes.entries()));
+
     try {
-      // First try with your SMTP service
-      console.log('Attempting to use configured SMTP service...');
-      
+      // Crie e verifique transporter, então envie o email
+      console.log('Creating email transporter with SMTP host:', process.env.SMTP_HOST);
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: false, // Always false for port 587 (STARTTLS)
+        port: 465,
+        secure: true,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASSWORD
         },
-        // Fix TLS configuration for port 587
         tls: {
-          rejectUnauthorized: false,
+          rejectUnauthorized: true,
           ciphers: 'SSLv3'
         },
-        // Add authentication method explicitly
-        authMethod: 'PLAIN', // Try 'LOGIN' if this continues to fail
-        debug: true,
-        logger: true
+        debug: true, // Enable debug logs
+        logger: true // Enable logger
       });
-      
-      // Verify connection configuration
+
+      console.log('Verifying SMTP connection...');
       await transporter.verify();
       console.log('SMTP connection verified successfully');
+
+      // Generate a unique Message-ID
+      const messageId = `${Date.now()}.${Math.random().toString(36).substring(2, 12)}@comunica.redeagromet.com.br`;
+      console.log('Generated message ID:', messageId);
       
+      console.log('Sending email to:', email);
       const info = await transporter.sendMail({
-        from: `"comunica@redeagromet.com.br" <${process.env.SMTP_USER}>`,
+        from: {
+          name: 'Rede Agromet',
+          address: 'suporte@comunica.redeagromet.com.br'
+        },
         to: email,
-        subject: 'Confirmação de Cadastro - REDEAGROMET',
-        text: `Olá ${name},\n\nObrigado por se cadastrar na REDEAGROMET.\n\nSeu cadastro foi recebido com sucesso e está sendo processado.\n\nAtenciosamente,\nEquipe REDEAGROMET`,
+        subject: 'Seu código de verificação - REDEAGROMET',
+        text: `Olá ${name},\n\nSeu código de verificação é: ${code}\n\nUse este código para confirmar seu cadastro.\n\nEquipe REDEAGROMET`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Bem-vindo(a) à REDEAGROMET!</h2>
             <p>Olá ${name},</p>
-            <p>Obrigado por se cadastrar na nossa plataforma.</p>
-            <p>Seu cadastro foi recebido com sucesso e está sendo processado.</p>
+            <p>Seu código de verificação é: <strong>${code}</strong></p>
+            <p>Use este código para confirmar seu cadastro.</p>
             <p>Atenciosamente,<br>Equipe REDEAGROMET</p>
           </div>
-        `
+        `,
+        messageId: messageId
       });
-      
-      console.log('Email sent successfully:', info.messageId);
-      return res.status(200).json({ success: true, message: 'Email enviado com sucesso' });
-      
-    } catch (smtpError) {
-      console.error('SMTP error, falling back to Ethereal:', smtpError);
-      
-      // Fallback to Ethereal for testing
-      console.log('Creating test account with Ethereal...');
-      const testAccount = await nodemailer.createTestAccount();
-      
-      const testTransporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass
-        }
-      });
-      
-      console.log('Sending test email...');
-      const info = await testTransporter.sendMail({
-        from: '"REDEAGROMET Test" <test@ethereal.email>', // Use an Ethereal address here, not your real domain
-        to: email,
-        subject: 'Confirmação de Cadastro - REDEAGROMET (Test)',
-        text: `Olá ${name},\n\nObrigado por se cadastrar na REDEAGROMET.\n\nSeu cadastro foi recebido com sucesso e está sendo processado.\n\nAtenciosamente,\nEquipe REDEAGROMET`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Bem-vindo(a) à REDEAGROMET!</h2>
-            <p>Olá ${name},</p>
-            <p>Obrigado por se cadastrar na nossa plataforma.</p>
-            <p>Seu cadastro foi recebido com sucesso e está sendo processado.</p>
-            <p>Atenciosamente,<br>Equipe REDEAGROMET</p>
-          </div>
-        `
-      });
-      
-      console.log('Test email sent:', nodemailer.getTestMessageUrl(info));
+
+      console.log('Email sent response:', info);
+      console.log('Código de verificação enviado:', info.messageId);
       return res.status(200).json({
         success: true,
-        message: 'Email de teste enviado com sucesso (modo de teste)',
-        previewUrl: nodemailer.getTestMessageUrl(info),
-        note: 'O sistema está em modo de teste. Em um ambiente de produção, o email seria enviado para o endereço real.'
+        message: 'Código de verificação enviado com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao enviar código de verificação:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao enviar código de verificação'
       });
     }
-    
-  } catch (error) {
-    console.error('Email error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: error instanceof Error ? error.message : 'Erro ao enviar email' 
-    });
   }
+
+  // Para verificar o código gerado
+  if (action === 'verifyCode') {
+    console.log('Verifying code for email:', email);
+    if (!email || !providedCode) {
+      console.log('Missing email or code for verification');
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: email and code'
+      });
+    }
+
+    const storedCode = verificationCodes.get(email);
+    console.log('Stored code:', storedCode, 'Provided code:', providedCode);
+
+    if (storedCode && storedCode === providedCode) {
+      // Se os códigos baterem, confirme o cadastro
+      console.log('Code verified successfully for:', email);
+      verificationCodes.delete(email); // Remove da memória
+      return res.status(200).json({
+        success: true,
+        message: 'Código válido! Cadastro confirmado.'
+      });
+    } else {
+      console.log('Invalid or expired code for:', email);
+      return res.status(400).json({
+        success: false,
+        message: 'Código inválido ou expirado'
+      });
+    }
+  }
+
+  // Se chegou aqui, é porque a ação não foi reconhecida
+  console.log('Invalid action requested:', action);
+  return res.status(400).json({
+    success: false,
+    message: 'Ação inválida. Use action=generateCode ou action=verifyCode'
+  });
 }

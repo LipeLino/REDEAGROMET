@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, ReactNode } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MonitoringHeader } from "@/components/dashboard/MonitoringHeader";
 import { WeatherMap } from "@/components/dashboard/WeatherMap";
@@ -17,7 +17,10 @@ import { fetchWeatherData, fetchStationConfig } from "@/lib/services/api";
 import { WeatherData, MonitoringState, StationConfig } from "@/lib/types/weather";
 import { weatherStations } from "@/lib/data/stations";
 import { Toaster } from "@/components/ui/toaster";
-import { NotificationProvider } from "@/hooks/use-notification";
+
+export const NotificationProvider = ({ children }: { children: ReactNode }) => {
+  return <>{children}</>;
+};
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);

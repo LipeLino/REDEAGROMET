@@ -8,8 +8,8 @@ const db = mysql({
     user: process.env.MYSQL_USER || 'root',
     password: process.env.MYSQL_PASSWORD || '',
     connectTimeout: 20000, // Increase timeout
-    waitForConnections: true,
-    connectionLimit: 10,
+    // Removed invalid property 'waitForConnections'
+    // Removed invalid property 'connectionLimit'
   }
 });
 

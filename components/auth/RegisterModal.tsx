@@ -28,6 +28,7 @@ export async function registerUser(data: UserRegistration) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'generateCode', // Adicione este parâmetro
         name: data.fullName,
         email: data.email
       }),
@@ -90,21 +91,32 @@ export function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const handleRegistration = async (data: UserRegistration) => {
     setIsLoading(true);
     setError('');
-    setSubmitAttempts(prev => prev + 1);
     
     try {
-      const result = await registerUser(data);
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'generateCode',
+          name: data.fullName,
+          email: data.email
+        }),
+      });
+      
+      const result = await response.json();
+      
       if (result.success) {
+        // Store email for verification step
         setEmail(data.email);
         setStep('verify');
-        
-        if ((result as any).verificationCode && process.env.NODE_ENV === 'development') {
-          setVerificationCode((result as any).verificationCode);
-        }
+      } else {
+        setError(result.message || 'Erro ao enviar código de verificação');
       }
     } catch (err) {
-      console.error('Registration error details:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao registrar');
+      console.error('Error sending verification code:', err);
+      setError('Erro ao processar solicitação');
     } finally {
       setIsLoading(false);
     }
@@ -115,11 +127,25 @@ export function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     setError('');
 
     try {
-      const result = await verifyEmail(email, verificationCode);
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'verifyCode',
+          email: email,
+          code: verificationCode
+        }),
+      });
+      
+      const result = await response.json();
       if (result.success) {
         onClose();
         reset();
         setStep('register');
+      } else {
+        setError(result.message || 'Erro na verificação');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro na verificação');
