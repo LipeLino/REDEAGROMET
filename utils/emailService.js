@@ -24,7 +24,7 @@ async function sendRegistrationConfirmation(user, confirmationToken) {
   const mailOptions = {
     from: "Suporte Rede Agromet <suporte@redeagromet.com.br>", // Must have username@domain format
     envelope: {
-      from: "suporte@redeagromet.com.br", // Just the email without display name in envelope
+      from: "suporte@comunica.redeagromet.com.br", // Just the email without display name in envelope
       to: user.email
     },
     subject: 'Please confirm your registration',
