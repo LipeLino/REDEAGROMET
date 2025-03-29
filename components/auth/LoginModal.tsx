@@ -68,7 +68,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       >
         <DialogContent className="sm:max-w-[425px] bg-white p-6 rounded-lg">
           <DialogTitle className="text-2xl font-bold text-center text-[#003366] mb-6">
-            Entrar no Sistema
+            Entrar
           </DialogTitle>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -109,7 +109,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 pt-4 pl-0.5">
               <Checkbox
                 id="remember"
                 checked={rememberMe}

@@ -89,25 +89,25 @@ function parseAgrometStationFormat(content: string): WeatherData | null {
     // Build the WeatherData object, handling potential missing values
     const weatherData: WeatherData = {
       timestamp: toBrazilianTimezone(timestamp).toISOString(),
-      temperature: parseNumberField(getColumnValue('TEMP')),
-      humidity: parseNumberField(getColumnValue('HUM')),
-      windSpeed: parseNumberField(getColumnValue('WIND')),
-      precipitation: parseNumberField(getColumnValue('RAIN')),
-      solarRadiation: parseNumberField(getColumnValue('RAD')),
-      pressure: parseNumberField(getColumnValue('PRESSURE')),
-      batteryLevel: parseNumberField(getColumnValue('BAT')),
+      temperature: parseNumberField(getColumnValue('TEMP')) ?? 0,
+      humidity: parseNumberField(getColumnValue('HUM')) ?? 0,
+      windSpeed: parseNumberField(getColumnValue('WIND')) ?? 0,
+      precipitation: parseNumberField(getColumnValue('RAIN')) ?? 0,
+      solarRadiation: parseNumberField(getColumnValue('RAD')) ?? 0, // Default to 0 if not available
+      pressure: parseNumberField(getColumnValue('PRESSURE')) ?? 0, // Use null for pressure if not available
+      batteryLevel: parseNumberField(getColumnValue('BAT')) ?? 0,
       // Calculate derived values
       dewPoint: calculateDewPoint(
-        parseNumberField(getColumnValue('TEMP')), 
+        parseNumberField(getColumnValue('TEMP')) , 
         parseNumberField(getColumnValue('HUM'))
       ),
       // Use default or null for unavailable values
-      evapotranspiration: parseNumberField(getColumnValue('ETO')) || calculateEstimatedEvapo(
+      evapotranspiration: parseNumberField(getColumnValue('ETO')) ?? calculateEstimatedEvapo(
         parseNumberField(getColumnValue('TEMP')),
         parseNumberField(getColumnValue('HUM')),
         parseNumberField(getColumnValue('RAD'))
-      ),
-      uv: parseNumberField(getColumnValue('UV')) || null,
+      ) ?? 0,
+      uv: parseNumberField(getColumnValue('UV')) || undefined,
       groundTemp: parseNumberField(getColumnValue('GTEMP')) || null,
       groundHumidity: parseNumberField(getColumnValue('GHUM')) || null,
       wifiSignal: 85, // Default value for FTP stations
@@ -209,8 +209,8 @@ function parseMeteorologicalStationFormat(content: string): WeatherData | null {
       batteryLevel: batteryLevel || 95,
       // Calculate derived values
       dewPoint: calculateDewPoint(temp || 0, humidity || 0),
-      evapotranspiration: evapotranspiration || calculateEstimatedEvapo(temp || 0, humidity || 0, solarRadiation || 0),
-      uv: null, // Not available
+      evapotranspiration: (evapotranspiration ?? calculateEstimatedEvapo(temp || 0, humidity || 0, solarRadiation || 0)) ?? 0,
+      uv: undefined, // Not available
       groundTemp: null, // Not available
       groundHumidity: null, // Not available
       wifiSignal: 85, // Default value for FTP stations
@@ -240,9 +240,9 @@ function parseNumberField(value: string | null): number | null {
 /**
  * Calculate dew point from temperature and humidity
  */
-function calculateDewPoint(temperature: number | null, humidity: number | null): number | null {
+function calculateDewPoint(temperature: number | null, humidity: number | null): number | undefined {
   if (temperature === null || humidity === null) {
-    return null;
+    return undefined;
   }
   
   // Magnus formula for dew point
@@ -255,9 +255,9 @@ function calculateDewPoint(temperature: number | null, humidity: number | null):
 /**
  * Calculate thermal sensation based on temperature, humidity and wind speed
  */
-function calculateThermalSensation(temperature: number | null, humidity: number | null, windSpeed: number | null): number | null {
+function calculateThermalSensation(temperature: number | null, humidity: number | null, windSpeed: number | null): number | undefined {
   if (temperature === null || humidity === null || windSpeed === null) {
-    return null;
+    return undefined;
   }
   
   // Simplified thermal sensation estimation
@@ -288,7 +288,7 @@ function calculateThermalSensation(temperature: number | null, humidity: number 
  */
 function calculateEstimatedEvapo(temperature: number | null, humidity: number | null, radiation: number | null): number | null {
   if (temperature === null || humidity === null || radiation === null) {
-    return null;
+    return 0; // Default to 0 if any input is null
   }
   
   // Very simplified Penman-Monteith derived formula
